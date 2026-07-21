@@ -9,7 +9,7 @@ coordinates or a plain-text address — no Google Maps API key required.
 ## Install
 
 ```bash
-git clone https://github.com/<your-username>/streetview-extractor.git
+git clone https://github.com/CtxtArc/streetview-extractor.git
 cd streetview-extractor
 pip install -e .
 ```

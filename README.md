@@ -3,8 +3,21 @@
 Download and stitch full Google Street View panoramas from either GPS
 coordinates or a plain-text address — no Google Maps API key required.
 
-> **Private/internal project.** No license is granted for reuse or
-> redistribution; this repo is for internal use only.
+## Example image
+
+```bash
+streetview-extract --latlon 48.87407,2.293991 --zoom 5 -o arc_triomphe.jpg
+13:21:48 INFO Looking up panorama near 48.87407, 2.293991...
+
+13:21:48 INFO Found pano HpkevTEl6q-UE_uDqVlndg. Downloading 338 tiles...
+[##############################] 338/338 tiles
+13:21:49 INFO Stitched 338/338 tiles successfully.
+13:21:50 INFO Saved panorama to arc_triomphe.jpg
+Saved: arc_triomphe.jpg
+Pano ID: HpkevTEl6q-UE_uDqVlndg
+Coordinates: 48.87407, 2.293991
+```
+![arc](./assets/arc_triomphe.jpg)
 
 ## Install
 

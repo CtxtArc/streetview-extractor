@@ -26,6 +26,8 @@ import aiohttp
 import requests
 from PIL import Image
 
+from .viewer import generate_html_viewer
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -58,6 +60,7 @@ class PanoInfo:
     pano_id: str
     lat: Optional[float] = None
     lon: Optional[float] = None
+    html_path: Optional[str] = None
 
 
 class StreetExtractor:
@@ -254,6 +257,38 @@ class StreetExtractor:
         """Synchronous wrapper around get_image_async."""
         return asyncio.run(self.get_image_async(lat, lon, on_progress=on_progress))
 
+    def save_html_viewer(
+        self,
+        image_path: str,
+        output_path: str,
+        title: Optional[str] = None,
+        caption: Optional[str] = None,
+        embed_image: bool = True,
+    ) -> str:
+        """
+        Generate a standalone HTML page with an interactive, drag-to-look-around
+        panorama viewer (zoom + fullscreen controls) from an already-saved
+        panorama JPG -- similar to the 3D Street View viewer in Google Maps.
+
+        This is independent of extract_and_save: you can call it any time
+        on any equirectangular panorama JPG you already have on disk.
+
+        :param image_path: Path to the stitched equirectangular JPG.
+        :param output_path: Where to write the .html file.
+        :param title: Page title. Defaults to the image filename.
+        :param caption: Overlay caption. Defaults to the image filename.
+        :param embed_image: Embed the image as base64 (self-contained HTML,
+            default) vs. reference it by relative path (smaller HTML).
+        :returns: output_path
+        """
+        return generate_html_viewer(
+            image_path,
+            output_path,
+            title=title,
+            caption=caption,
+            embed_image=embed_image,
+        )
+
     def extract_and_save(
         self,
         output_path: str,
@@ -261,6 +296,8 @@ class StreetExtractor:
         lon: Optional[float] = None,
         address: Optional[str] = None,
         on_progress=None,
+        html_output: Optional[str] = None,
+        embed_image_in_html: bool = True,
     ) -> PanoInfo:
         """
         Fetch a panorama (by lat/lon or address) and save it to disk.
@@ -268,6 +305,15 @@ class StreetExtractor:
         Exactly one of (lat and lon) or address must be provided.
         Returns PanoInfo on success. Raises GeocodingError or
         StreetViewNotFoundError on failure.
+
+        :param html_output: Optional path. If given, also generates an
+            interactive 3D-style HTML panorama viewer (like Google Maps'
+            Street View) alongside the saved JPG. Leave as None (default)
+            to skip this -- all prior behavior is unchanged.
+        :param embed_image_in_html: If True (default) and html_output is
+            given, the JPG is base64-embedded in the HTML so it's a single
+            self-contained file. If False, the HTML references the JPG by
+            relative path instead.
         """
         if address is not None:
             lat, lon = self.geocode(address)
@@ -278,4 +324,16 @@ class StreetExtractor:
         img, info = self.get_image(lat, lon, on_progress=on_progress)
         img.save(output_path, quality=100)
         logger.info(f"Saved panorama to {output_path}")
+
+        if html_output:
+            self.save_html_viewer(
+                output_path,
+                html_output,
+                title=f"Street View \u2014 {lat:.5f}, {lon:.5f}",
+                caption=f"{lat:.5f}, {lon:.5f}  \u00b7  pano {info.pano_id}",
+                embed_image=embed_image_in_html,
+            )
+            info.html_path = html_output
+            logger.info(f"Saved 3D viewer to {html_output}")
+
         return info

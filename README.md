@@ -2,6 +2,8 @@
 
 Download and stitch full Google Street View panoramas from either GPS
 coordinates or a plain-text address — no Google Maps API key required.
+Optionally also generate an interactive, drag-to-look-around 3D-style HTML
+viewer, like the one in Google Maps.
 
 ## Example image
 
@@ -60,6 +62,30 @@ python -m street_extractor --address "Golden Gate Bridge" -o gg.jpg
 Run `streetview-extract --help` for all options (concurrency, retries,
 verbose logging).
 
+### Interactive 3D viewer
+
+Pass `--html` to also generate a standalone HTML page with a
+drag-to-look-around, zoom, and fullscreen panorama viewer — the same
+interaction model as Street View in Google Maps. It's powered by
+[Pannellum](https://pannellum.org/) (MIT-licensed), loaded from its CDN
+at view-time; no extra install step or API key needed.
+
+```bash
+# auto-derives eiffel.html from -o eiffel.jpg
+streetview-extract --address "Eiffel Tower, Paris" -o eiffel.jpg --html
+
+# custom html output path
+streetview-extract --latlon 48.8584,2.2945 -o out.jpg --html tour.html
+
+# smaller HTML that references the jpg by relative path instead of
+# embedding it as base64 (keep the .jpg and .html together if you use this)
+streetview-extract --address "Times Square, New York" -o ts.jpg --html --html-no-embed
+```
+
+By default the panorama JPG is base64-embedded directly in the HTML, so
+the generated file is fully self-contained — you can move, email, or host
+it on its own.
+
 ## Library usage
 
 ```python
@@ -87,6 +113,29 @@ Or work with the image in memory without saving:
 
 ```python
 img, info = extractor.get_image(37.8199, -122.4783)  # PIL.Image
+```
+
+Generate the interactive HTML viewer in the same call:
+
+```python
+info = extractor.extract_and_save(
+    "out.jpg", address="Golden Gate Bridge", html_output="out.html"
+)
+print(info.html_path)  # -> "out.html"
+```
+
+Or generate a viewer from a panorama JPG you already have on disk, any time:
+
+```python
+extractor.save_html_viewer("out.jpg", "out.html")
+```
+
+Or use the standalone function directly, without a `StreetExtractor` instance:
+
+```python
+from street_extractor import generate_html_viewer
+
+generate_html_viewer("out.jpg", "out.html", embed_image=False)
 ```
 
 ## Testing
@@ -118,6 +167,10 @@ servers. CI (`.github/workflows/ci.yml`) runs the suite against Python 3.9,
   service. It's rate-limited and meant for light use; for heavy/production
   use, swap in a paid geocoder (e.g. Google Geocoding API) in
   `StreetExtractor.geocode()`.
+- **3D viewer**: `--html` generates the page locally and needs no network
+  access to build; the viewer's browser fetches Pannellum's small JS/CSS
+  from its CDN the first time the page is opened, so an internet connection
+  is needed to *view* the page (not to generate it).
 
 ## Project layout
 
@@ -126,11 +179,13 @@ streetview-extractor/
 ├── src/street_extractor/
 │   ├── __init__.py     # public API exports
 │   ├── core.py         # StreetExtractor, geocoding, tile download/stitch
+│   ├── viewer.py        # interactive 3D-style HTML panorama viewer generator
 │   ├── cli.py           # streetview-extract command
 │   └── __main__.py     # enables `python -m street_extractor`
 ├── tests/
 │   ├── test_core.py
-│   └── test_cli.py
+│   ├── test_cli.py
+│   └── test_viewer.py
 ├── .github/workflows/ci.yml
 ├── pyproject.toml
 └── README.md

@@ -11,9 +11,6 @@ venv/
 .mypy_cache/
 *.egg-info
 
-*.jpg
-*.jpeg
-*.png
 !tests/fixtures/*.png
 .env
 .DS_Store

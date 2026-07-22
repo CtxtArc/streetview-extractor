@@ -66,9 +66,11 @@ verbose logging).
 
 Pass `--html` to also generate a standalone HTML page with a
 drag-to-look-around, zoom, and fullscreen panorama viewer — the same
-interaction model as Street View in Google Maps. It's powered by
-[Pannellum](https://pannellum.org/) (MIT-licensed), loaded from its CDN
-at view-time; no extra install step or API key needed.
+interaction model as Street View in Google Maps. It's powered by a small,
+hand-rolled WebGL viewer built specifically for this project (no external
+libraries, no CDN, no network access required at any point — the whole
+thing, viewer engine included, is inlined directly into the generated
+HTML).
 
 ```bash
 # auto-derives eiffel.html from -o eiffel.jpg
@@ -80,11 +82,19 @@ streetview-extract --latlon 48.8584,2.2945 -o out.jpg --html tour.html
 # smaller HTML that references the jpg by relative path instead of
 # embedding it as base64 (keep the .jpg and .html together if you use this)
 streetview-extract --address "Times Square, New York" -o ts.jpg --html --html-no-embed
+
+# convert a panorama JPG you already have on disk -- no download, no
+# geocoding, just JPG -> HTML
+streetview-extract --from-image arc_triomphe.jpg --html arc_triomphe.html
+
+# same, but auto-derive arc_triomphe.html from the input filename
+streetview-extract --from-image arc_triomphe.jpg
 ```
 
 By default the panorama JPG is base64-embedded directly in the HTML, so
 the generated file is fully self-contained — you can move, email, or host
-it on its own.
+it on its own, and it works completely offline (no CDN, no network calls,
+ever).
 
 ## Library usage
 
@@ -168,9 +178,9 @@ servers. CI (`.github/workflows/ci.yml`) runs the suite against Python 3.9,
   use, swap in a paid geocoder (e.g. Google Geocoding API) in
   `StreetExtractor.geocode()`.
 - **3D viewer**: `--html` generates the page locally and needs no network
-  access to build; the viewer's browser fetches Pannellum's small JS/CSS
-  from its CDN the first time the page is opened, so an internet connection
-  is needed to *view* the page (not to generate it).
+  access to build *or* to view — the WebGL viewer engine is inlined
+  directly into the HTML, so the generated file works fully offline,
+  including on the first open, with no CDN or other external dependency.
 
 ## Project layout
 

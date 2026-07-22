@@ -7,6 +7,7 @@ from .core import (
     StreetViewNotFoundError,
     ZOOM_GRIDS,
 )
+from .viewer import generate_html_viewer
 
 __version__ = "0.1.0"
 
@@ -16,5 +17,6 @@ __all__ = [
     "StreetViewNotFoundError",
     "GeocodingError",
     "ZOOM_GRIDS",
+    "generate_html_viewer",
     "__version__",
 ]

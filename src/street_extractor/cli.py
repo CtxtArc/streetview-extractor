@@ -9,6 +9,7 @@ Examples:
     streetview-extract --address "Times Square, New York" -o times_square.jpg -q
     streetview-extract --address "Eiffel Tower, Paris" -o eiffel.jpg --html
     streetview-extract --address "Eiffel Tower, Paris" -o eiffel.jpg --html eiffel_view.html
+    streetview-extract --from-image eiffel.jpg --html eiffel_view.html
 """
 import argparse
 import logging
@@ -16,6 +17,7 @@ import sys
 from pathlib import Path
 
 from .core import GeocodingError, StreetExtractor, StreetViewNotFoundError
+from .viewer import generate_html_viewer
 def make_progress_printer(quiet: bool):
     if quiet:
         return None
@@ -33,13 +35,24 @@ def build_parser() -> argparse.ArgumentParser:
         prog="streetview-extract",
         description="Download and stitch a Google Street View panorama.",
     )
-    loc_group = parser.add_mutually_exclusive_group(required=True)
+    loc_group = parser.add_mutually_exclusive_group(required=False)
     loc_group.add_argument("--address", type=str, help="Free-text address or place name.")
     loc_group.add_argument(
         "--latlon",
         type=str,
         metavar="LAT,LON",
         help="Coordinates as 'lat,lon', e.g. 40.6892,-74.0445",
+    )
+    loc_group.add_argument(
+        "--from-image",
+        type=str,
+        metavar="PATH",
+        help=(
+            "Skip downloading entirely and generate the interactive HTML "
+            "viewer directly from a panorama JPG you already have on disk. "
+            "Use --html to control the output path (auto-derived from this "
+            "path otherwise, e.g. pano.jpg -> pano.html)."
+        ),
     )
     parser.add_argument(
         "-o", "--output", type=str, default="panorama.jpg", help="Output image path."
@@ -89,6 +102,28 @@ def main(argv=None) -> int:
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%H:%M:%S",
     )
+    modes_given = [m for m in (args.address, args.latlon, args.from_image) if m is not None]
+    if len(modes_given) == 0:
+        parser.error("one of the arguments --address --latlon --from-image is required")
+    if len(modes_given) > 1:
+        parser.error("--address, --latlon, and --from-image are mutually exclusive")
+
+    if args.from_image:
+        html_output = args.html
+        if html_output is None or html_output == "__AUTO__":
+            html_output = str(Path(args.from_image).with_suffix(".html"))
+        try:
+            generate_html_viewer(
+                args.from_image,
+                html_output,
+                embed_image=not args.html_no_embed,
+            )
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        print(f"3D viewer: {html_output}")
+        return 0
+
     lat = lon = None
     address = None
     if args.address:

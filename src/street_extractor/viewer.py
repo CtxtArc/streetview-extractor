@@ -187,7 +187,7 @@ def _build_viewer_js(image_src: str, hfov: int = 100, min_hfov: int = 30,
       var y = cosTheta;
       var z = sinPhi * sinTheta;
       positions.push(RADIUS * x, RADIUS * y, RADIUS * z);
-      texCoords.push(1.0 - (lon / LON_BANDS), lat / LAT_BANDS);
+      texCoords.push( lon / LON_BANDS, lat / LAT_BANDS);
     }
   }
   for (lat = 0; lat < LAT_BANDS; lat++) {
